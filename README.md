@@ -1,1 +1,6 @@
 # AdvancedWebFuzzer
+
+
+##Authors
+* @Iljalala
+*
