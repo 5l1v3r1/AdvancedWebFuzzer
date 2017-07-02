@@ -1,0 +1,13 @@
+POST / HTTP/1.1
+Host: forum.antichat.ru
+User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; rv:47.0) Gecko/20100101 Firefox/47.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate
+Referer: http://monitoring.kantiana.ru/
+Cookie: _ym_uid=1491326072127721551; _ga=GA1.2.1787577537.1492609601
+Connection: close
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 710
+
+xuy=1&xuy2=2
