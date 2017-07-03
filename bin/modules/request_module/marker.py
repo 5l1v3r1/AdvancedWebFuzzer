@@ -4,19 +4,19 @@
 import json
 import re
 from bs4 import BeautifulSoup
-from modules.request_module.json_mark import JsonMarker
-from modules.request_module.request_object import RequestObject
+from json_mark import JsonMarker
+from request_object import RequestObject
 #from json_mark import JsonMarker
 
 
 class RequestMarker:
     # TODO: отмечать параметры запросах REST стиля
-    def __init__(self, request, injection_mark='§ §'):
+    def __init__(self, request, injectionMark='§ §'):
         """Создает экзепляр класса RequestAnalyzer
         :param request: строка, содержащая сырой валидный запрос к серверу (например запросы из burpsuite)
-        :param injection_mark: символы, разделенные пробелом, помечающие точки инъекции
+        :param injectionMark: символы, разделенные пробелом, помечающие точки инъекции
         """
-        self.injection_mark = injection_mark
+        self.injectionMark = injectionMark
         self.index_mark = 0
         self.excluded_headers = {'Host'}  # Если можно будет указывать, какие параметры пропускать
         self.all_headers = set()  # Все имена распарсенных хидеров будут здесь
@@ -29,26 +29,19 @@ class RequestMarker:
 
         self.request_object = RequestObject(request)
 
-        self._mark_request()
+        self._markRequest()
 
-    def get_marked_request(self):
+    def getMarkedRequest(self):
         return self.request_object.market_request
 
-#    def get_markers(self):
-#        request = self.request_object.market_request
-#        marks = self.injection_mark.split(" ")
-#        print(request)
-#        pattern =   marks[0] + '.*?' + marks[1] 
-#        return re.findall(pattern, request)
-
-    def get_initial_request(self):
+    def getInitialRequest(self):
         return self.request_object.raw_request
 
-    def _mark_request(self):
+    def _markRequest(self):
         """Помечает отдельные участки запроса и собирает их вместе в self.request_object.market_request"""
-        self._mark_query_string()
-        self._mark_headers()
-        self._mark_data()
+        self._markQueryString()
+        self._markHeaders()
+        self._markData()
 	
         data = self.request_object.data
         if data == None:
@@ -57,22 +50,21 @@ class RequestMarker:
                 [self.request_object.query_string] + self.request_object.headers) + '\r\n\r\n' + data
         print(self.request_object.market_request)
 
-    def _mark_query_string(self):
+    def _markQueryString(self):
         """Помечает значения в строке запроса"""
         method, uri, http_ver = self.request_object.query_string.split(' ')
 
-        uri = self._mark_by_regexp(uri, '=([^&]+)')
-        uri = self._mark_empty_params(uri)
+        uri = self._markByRegexp(uri, '=([^&]+)')
+        uri = self._markEmptyParams(uri)
 
         self.request_object.query_string = ' '.join([method, uri, http_ver])
   
-    def _mark_headers(self):
+    def _markHeaders(self):
         """Помечает значения в хидерах"""
         modified_headers = []
 
         for header in self.request_object.headers:
             try:
-		#self.index_mark = self.index_mark + 1
                 name, value = header.split(': ')
                 self.all_headers.add(name)
 
@@ -80,51 +72,50 @@ class RequestMarker:
                     # Эвристика
                     if (' ' not in value) or (';' not in value and '=' not in value) \
                             or (';' in value and '=' not in value):
-                        value = self.injection_mark.replace(' ', value) #  + ':' +  str(self.index_mark)
+                        value = self.injectionMark.replace(' ', value) #  + ':' +  str(self.index_mark)
                     else:
-                        value = self._mark_by_regexp(value, '=([^\s;]+);?') # + ':' +  str(self.index_mark)
+                        value = self._markByRegexp(value, '=([^\s;]+);?') # + ':' +  str(self.index_mark)
 
             except ValueError as ve:
-                print('[!] Exception in _mark_headers. Message: {}'.format(ve))
+                print('[!] Exception in _markHeaders. Message: {}'.format(ve))
 
             modified_headers.append(': '.join([name, value]))
 
         for header, value in self.extra_headers.items():
             if header not in self.all_headers:
-                modified_headers.append(': '.join([header, self.injection_mark.replace(' ', value)]))
+                modified_headers.append(': '.join([header, self.injectionMark.replace(' ', value)]))
 
         self.request_object.headers = modified_headers
 
-    def _mark_data(self):
+    def _markData(self):
         """Помечает параметры в данных"""
-        #print(self.request_object.data)
         if not self.request_object.data:
             return
 
         content_type = self.request_object.content_type
-       
 
         if content_type == 'json':
-            self._mark_data_json()
+            self._markDataJson()
         elif content_type == 'xml':
-            self._mark_data_xml()
-        else:
-            self._mark_data_plain()
+            self._markDataXml()
+        elif content_type == 'plain':
+            self._markDataPlain()
 
-    def _mark_data_plain(self):
+
+    def _markDataPlain(self):
         """Помечаются данные вида param1=value1&param2=value2"""
-        self.request_object.data = self._mark_by_regexp(self.request_object.data, '=([^&]+)')
-        self.request_object.data = self._mark_empty_params(self.request_object.data)
+        self.request_object.data = self._markByRegexp(self.request_object.data, '=([^&]+)')
+        self.request_object.data = self._markEmptyParams(self.request_object.data)
 
-    def _mark_data_json(self):
+    def _markDataJson(self):
         """Помечаются данные, представленные json"""
-        json_encoder = JsonMarker(self.injection_mark)
+        json_encoder = JsonMarker(self.injectionMark)
         data = self.request_object.data
 
         data = json.loads(data)
         self.request_object.data = json_encoder.encode(data)
 
-    def _mark_data_xml(self):
+    def _markDataXml(self):
         """Помечаются данные, представленные xml"""
         # some kostyl
         attr_regexp1 = '''(^version|^encoding)="(.+?)"'''
@@ -132,12 +123,12 @@ class RequestMarker:
         item_regexp = '''<[^\/]+?>([^\<\>]+?)<\/.+?>'''
         data = self.request_object.data
 
-        data = self._mark_by_regexp(data, attr_regexp1)
-        data = self._mark_by_regexp(data, attr_regexp2)
-        data = self._mark_by_regexp(data, item_regexp)
+        data = self._markByRegexp(data, attr_regexp1)
+        data = self._markByRegexp(data, attr_regexp2)
+        data = self._markByRegexp(data, item_regexp)
         self.request_object.data = data
 
-    def _mark_by_regexp(self, string, regexp, prefix='', group=1, flags=0):
+    def _markByRegexp(self, string, regexp, prefix='', group=1, flags=0):
         """Помечает параметры в строке по regexp'у
         :param string: Строка, в которой помечаются параметры
         :param regexp: Регулярное выражение, по которому они ищутся
@@ -146,16 +137,16 @@ class RequestMarker:
         """
         string = re.sub(regexp,
                         lambda x: prefix + x.group(0).replace(x.group(group),
-                                                              self.injection_mark.replace(' ', x.group(group))),
+                                                              self.injectionMark.replace(' ', x.group(group))),
                         string, flags=flags)
         return string
 
-    def _mark_empty_params(self, string):
+    def _markEmptyParams(self, string):
         """Помечает пустые параметры
         :param string: Строка, в которой пустые параметры ищутся
         :return: Измененная строка string
         """
-        return re.sub('=(&|$)', lambda x: '=' + self.injection_mark + ('&' if '&' in x.group() else ''), string)
+        return re.sub('=(&|$)', lambda x: '=' + self.injectionMark + ('&' if '&' in x.group() else ''), string)
 
 
 

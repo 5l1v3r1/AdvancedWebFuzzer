@@ -1,4 +1,5 @@
 {
    "THREAD" : 1,
-   "IS_SSL": false
+   "IS_SSL": false,
+   "INJECTION_MARK": "§"
 }

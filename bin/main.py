@@ -47,7 +47,7 @@ if __name__ == '__main__':
 		print(config)
 
 	req = RequestMarker(request_string)
-	mark_request = req.get_marked_request()
+	mark_request = req.getMarkedRequest()
 	sender.send(mark_request, dictionaryFile, config)
 	
 
